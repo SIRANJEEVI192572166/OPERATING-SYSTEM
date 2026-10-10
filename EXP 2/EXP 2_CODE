@@ -1,0 +1,26 @@
+
+#include <stdio.h>
+
+int main()
+{
+    FILE *fp;
+    char text[100];
+
+    printf("Enter text: ");
+    fgets(text, sizeof(text), stdin);
+
+    fp = fopen("output.txt", "w");
+
+    if (fp == NULL)
+    {
+        printf("Cannot create destination file");
+        return 1;
+    }
+
+    fputs(text, fp);
+    fclose(fp);
+
+    printf("File copied successfully");
+
+    return 0;
+}
