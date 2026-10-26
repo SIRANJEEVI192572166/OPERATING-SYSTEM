@@ -1,0 +1,142 @@
+Server Program (server.c)
+#include <stdio.h>
+#include <string.h>
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
+int main()
+{
+    WSADATA wsa;
+    SOCKET server_socket, client_socket;
+    struct sockaddr_in server;
+    char message[1024];
+    int n;
+    WSAStartup(MAKEWORD(2, 2), &wsa);
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == INVALID_SOCKET)
+    {
+        printf("Socket creation failed\n");
+        WSACleanup();
+        return 1;
+    }
+    memset(&server, 0, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons(8080);
+    if (bind(server_socket, (struct sockaddr *)&server,
+             sizeof(server)) == SOCKET_ERROR)
+    {
+        printf("Bind failed\n");
+        closesocket(server_socket);
+        WSACleanup();
+        return 1;
+    }
+    if (listen(server_socket, 1) == SOCKET_ERROR)
+    {
+        printf("Listen failed\n");
+        closesocket(server_socket);
+        WSACleanup();
+        return 1;
+    }
+    printf("Server waiting for client...\n");
+    client_socket = accept(server_socket, NULL, NULL);
+    if (client_socket == INVALID_SOCKET)
+    {
+        printf("Client connection failed\n");
+        closesocket(server_socket);
+        WSACleanup();
+        return 1;
+    }
+    printf("Client connected!\n");
+    while (1)
+    {
+        n = recv(client_socket, message,
+                 sizeof(message) - 1, 0);
+        if (n <= 0)
+            break;
+        message[n] = '\0';
+        printf("Client: %s\n", message);
+        if (strcmp(message, "bye") == 0)
+            break;
+        printf("Server: ");
+        if (fgets(message, sizeof(message), stdin) == NULL)
+            break;
+        message[strcspn(message, "\r\n")] = '\0';
+        if (send(client_socket, message,
+                 (int)strlen(message) + 1, 0) == SOCKET_ERROR)
+        {
+            printf("Sending failed\n");
+            break;
+        }
+        if (strcmp(message, "bye") == 0)
+            break;
+    }
+    closesocket(client_socket);
+    closesocket(server_socket);
+    WSACleanup();
+    printf("Server disconnected\n");
+    return 0;
+}
+
+--------------------------------------------------
+Client Program (client.c)
+#include <stdio.h>
+#include <string.h>
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
+int main()
+{
+    WSADATA wsa;
+    SOCKET client_socket;
+    struct sockaddr_in server;
+    char message[1024];
+    int n;
+    WSAStartup(MAKEWORD(2, 2), &wsa);
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == INVALID_SOCKET)
+    {
+        printf("Socket creation failed\n");
+        WSACleanup();
+        return 1;
+    }
+    memset(&server, 0, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(8080);
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    if (connect(client_socket, (struct sockaddr *)&server,
+                sizeof(server)) == SOCKET_ERROR)
+    {
+        printf("Connection failed. Start the server first.\n");
+        closesocket(client_socket);
+        WSACleanup();
+        return 1;
+    }
+    printf("Connected to server!\n");
+    printf("Type 'bye' to exit.\n");
+    while (1)
+    {
+        printf("Client: ");
+        if (fgets(message, sizeof(message), stdin) == NULL)
+            break;
+        message[strcspn(message, "\r\n")] = '\0';
+        if (send(client_socket, message,
+                 (int)strlen(message) + 1, 0) == SOCKET_ERROR)
+        {
+            printf("Sending failed\n");
+            break;
+        }
+        if (strcmp(message, "bye") == 0)
+            break;
+        n = recv(client_socket, message,
+                 sizeof(message) - 1, 0);
+        if (n <= 0)
+            break;
+        message[n] = '\0';
+        printf("Server: %s\n", message);
+        if (strcmp(message, "bye") == 0)
+            break;
+    }
+    closesocket(client_socket);
+    WSACleanup();
+    printf("Client disconnected\n");
+    return 0;
+}
