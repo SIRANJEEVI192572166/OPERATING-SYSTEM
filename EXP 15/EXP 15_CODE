@@ -1,0 +1,26 @@
+#include <stdio.h>
+
+int shared = 0;
+
+void process1()
+{
+    shared++;
+    printf("Process 1: Shared variable = %d\n", shared);
+}
+void process2()
+{
+    shared++;
+    printf("Process 2: Shared variable = %d\n", shared);
+}
+
+int main()
+{
+    printf("Initial value = %d\n", shared);
+
+    process1();
+    process2();
+
+    printf("Final value = %d\n", shared);
+
+    return 0;
+}
